@@ -6,12 +6,34 @@ var gulp = require('gulp'),
 	connect = require('gulp-connect'),
 	concat = require('gulp-concat');
 
-var coffeeSource = ['components/coffee/tagline.coffee'];  
-var jsSources = [
+var env,
+	coffeeSource,
+	jsSources,
+	sassSources,
+	htmlSources,
+	jsonSources,
+	outputDir,
+	sassStyle;
+
+evn = process.env.NODE_ENV || 'development';
+
+if(env==='development'){
+	outputDir = 'builds/development/';
+	sassStyle = 'expanded';
+} else {
+	outputDir = 'builds/production/'
+	sassStyle = 'compressed';
+}
+
+
+coffeeSource = ['components/coffee/tagline.coffee'];  
+jsSources = [
 'components/scripts/tagline.js',
 'components/scripts/template.js'
 ];
-var sassSource = ['components/sass/style.scss']
+sassSources = ['components/sass/style.scss'];
+htmlSources = [outputDir + '*.html'];
+jsonSources = [outputDir + 'js/*.json'];
 
 gulp.task('coffee', function() {
 	gulp.src(coffeeSource)
@@ -24,19 +46,19 @@ gulp.task('js', function(){
 	gulp.src(jsSources)
 		.pipe(concat('script.js'))
 		.pipe(browserify())
-		.pipe(gulp.dest('builds/development/js'))
+		.pipe(gulp.dest(outputDir + 'js'))
 		.pipe(connect.reload())
 });
 	
 gulp.task('compass', function(){
-	gulp.src(sassSource)
+	gulp.src(sassSources)
 		.pipe(compass({
 			sass: 'components/sass',
-			images: 'builds/development/images',
-			style: 'expanded'
+			images: outputDir + 'images',
+			style: sassStyle
 		})
 			.on('error', gutil.log))
-		.pipe(gulp.dest('builds/development/css'))
+		.pipe(gulp.dest(outputDir + 'css'))
 		.pipe(connect.reload())
 });	
 
@@ -44,14 +66,26 @@ gulp.task('watch', function(){
 	gulp.watch(coffeeSource, ['coffee'])
 	gulp.watch(jsSources, ['js'])
 	gulp.watch('components/sass/*.scss', ['compass'])
+	gulp.watch(htmlSources, ['html'])
+	gulp.watch(jsonSources, ['json'])
 });
 
 gulp.task('connect', function(){
 	connect.server({
-		root: 'builds/development/',
+		root: outputDir + '',
 		livereload: true
 
 	});
 });
 
-gulp.task('default', ['coffee', 'js', 'compass', 'connect', 'watch']);
+gulp.task('html', function(){
+	gulp.src(htmlSources)
+		.pipe(connect.reload())
+})
+
+gulp.task('json', function(){
+	gulp.src(jsonSources)
+		.pipe(connect.reload())
+})
+
+gulp.task('default', ['html', 'json', 'coffee', 'js', 'compass', 'connect', 'watch']);
